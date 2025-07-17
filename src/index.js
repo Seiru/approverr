@@ -109,6 +109,8 @@ const main = async function(config) {
       }
 
       if (config.ntfy && config.ntfy.enabled) {
+        // Do not send the actual error because ntfy is not a secure service, and the error could contain sensitive information
+
         let message;
         const mediaTitle = request.type === 'movie' ? mediaDetails.title : mediaDetails.name;
 
