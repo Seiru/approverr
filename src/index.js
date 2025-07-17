@@ -151,11 +151,16 @@ const main = async function(config) {
 
       if (parsedConfig.ntfy && parsedConfig.ntfy.enabled) {
         if (Date.now() - timeLastNtfyErrorMessageSent > 300000) {
-          // Do not send the actual error because ntfy is not a secure service, and the error could contain sensitive information
-          await fetch(`https://ntfy.sh/${parsedConfig.ntfy.topic}`, {
-            method: 'POST',
-            body: 'Error in Approverr within the past five minutes. Please check logs for more information.'
-          });
+
+          try {
+            await fetch(`https://ntfy.sh/${parsedConfig.ntfy.topic}`, {
+              method: 'POST',
+              body: 'Error in Approverr within the past five minutes. Please check logs for more information.'
+            });
+          } catch (error) {
+            console.error('Error sending ntfy message to alert about an error:');
+            console.error(error);
+          }
 
           timeLastNtfyErrorMessageSent = Date.now();
         }
