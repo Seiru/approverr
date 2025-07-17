@@ -1,0 +1,42 @@
+overseerr:
+  url: "http://192.168.1.201:5055/api/v1"
+  apiKey: "YOUR_API_KEY"
+ntfy:
+  enabled: false
+  topic: "your_ntfy_topic_name"
+autoApprove: true
+# Example rules, replace with your own
+rules:
+  - name: "wrestling tv" #required
+    type: "tv" #required
+    keywords: # at least one of keywords, strings, or regex is required
+      - "wrestling"
+      - "wwe"
+    strings:
+      - "WWE"
+    regex: # Backslashes need to be escaped when stored as a string like this
+      - '\\bAEW\\b'
+      - '\\bNXT\\b'
+    actions: # at least one action is required
+      rootFolder: "/my_media_share/Wrestling TV"
+  - name: "wrestling events"
+    type: "movie" #required
+    keywords:
+      - "wrestling"
+      - "wwe"
+    strings:
+      - "WWE"
+    regex:
+      - '\\bAEW\\b'
+      - '\\bNXT\\b'
+    actions:
+      rootFolder: "/my_media_share/Wrestling Events"
+  - name: "anime tv"
+    type: "tv"
+    keywords:
+      - "anime"
+    strings:
+      - "anime"
+      - "manga"
+    actions:
+      rootFolder: "/my_media_share/Anime TV"

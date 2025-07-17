@@ -1,0 +1,7 @@
+version: '3.8'
+
+services:
+  approverr:
+    build: .
+    volumes:
+      - ./config/config.yml:/usr/src/approverr/config/config.yml
