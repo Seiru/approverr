@@ -92,10 +92,8 @@ const main = async function(config) {
 
       if (actionsToTake) {
         // We just support updating the root folder for now
-        for (const action of actionsToTake) {
-          if (action.rootFolder) {
-            await overseerrClient.updateRequest(request.id, action.rootFolder);
-          }
+        if (actionsToTake.rootFolder) {
+          await overseerrClient.updateRequest(request.id, actionsToTake.rootFolder);
         }
       }
 
