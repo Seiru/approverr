@@ -18,7 +18,7 @@ const main = async function(config) {
         if (rule.type === 'movie' && request.type === 'movie') {
           if (rule.keywords) {
             for (const keyword of rule.keywords) {
-              if (mediaDetails.keywords?.some(requestKeyword => requestKeyword.name.downcase() === keyword.downcase())) {
+              if (mediaDetails.keywords?.some(requestKeyword => requestKeyword.name.toLowerCase() === keyword.toLowerCase())) {
                 console.log(`Tag ${keyword} found in movie ${mediaDetails.title}`);
                 actionsToTake = rule.actions;
               }
@@ -27,10 +27,10 @@ const main = async function(config) {
 
           if (rule.strings) {
             for (const string of rule.strings) {
-              if (mediaDetails.overview?.downcase().includes(string.downcase())) {
+              if (mediaDetails.overview?.toLowerCase().includes(string.toLowerCase())) {
                 console.log(`String ${string} found in movie ${mediaDetails.title}`);
                 actionsToTake = rule.actions;
-              } else if (mediaDetails.title?.downcase().includes(string.downcase())) {
+              } else if (mediaDetails.title?.toLowerCase().includes(string.toLowerCase())) {
                 console.log(`String ${string} found in movie ${mediaDetails.title}`);
                 actionsToTake = rule.actions;
               }
@@ -55,7 +55,7 @@ const main = async function(config) {
         } else if (rule.type === 'tv' && request.type === 'tv') {
           if (rule.keywords) {
             for (const keyword of rule.keywords) {
-              if (mediaDetails.keywords?.some(requestKeyword => requestKeyword.name.downcase() === keyword.downcase())) {
+              if (mediaDetails.keywords?.some(requestKeyword => requestKeyword.name.toLowerCase() === keyword.toLowerCase())) {
                 console.log(`Tag ${keyword} found in TV show ${mediaDetails.name}`);
                 actionsToTake = rule.actions;
               }
@@ -64,10 +64,10 @@ const main = async function(config) {
 
           if (rule.strings) {
             for (const string of rule.strings) {
-              if (mediaDetails.overview?.downcase().includes(string.downcase())) {
+              if (mediaDetails.overview?.toLowerCase().includes(string.toLowerCase())) {
                 console.log(`String ${string} found in TV show ${mediaDetails.name}`);
                 actionsToTake = rule.actions;
-              } else if (mediaDetails.name?.downcase().includes(string.downcase())) {
+              } else if (mediaDetails.name?.toLowerCase().includes(string.toLowerCase())) {
                 console.log(`String ${string} found in TV show ${mediaDetails.name}`);
                 actionsToTake = rule.actions;
               }
