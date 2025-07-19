@@ -93,7 +93,16 @@ const main = async function(config) {
       if (actionsToTake) {
         // We just support updating the root folder for now
         if (actionsToTake.rootFolder) {
-          await overseerrClient.updateRequest(request.id, actionsToTake.rootFolder);
+          const options = {
+            mediaType: request.type,
+            rootFolder: actionsToTake.rootFolder
+          }
+
+          if (request.type === "tv") {
+            options.seasons = request.seasons.map(season => season.seasonNumber);
+          }
+
+          await overseerrClient.updateRequest(request.id, options);
         }
       }
 

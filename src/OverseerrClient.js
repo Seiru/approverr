@@ -15,16 +15,14 @@ export default class OverseerrClient {
     return (await response.json()).results;
   }
 
-  async updateRequest(requestId, rootFolder) {
+  async updateRequest(requestId, options) {
     const response = await fetch(`${this.url}/request/${requestId}`, {
       method: 'PUT',
       headers: {
         'X-Api-Key': this.apiKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        rootFolder,
-      }),
+      body: JSON.stringify(options),
     });
 
     return await response.json();
