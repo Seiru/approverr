@@ -3,4 +3,4 @@ services:
     build: .
     volumes:
       - ./config/config.yml:/usr/src/approverr/config/config.yml
-    restart: always
+    restart: unless-stopped
