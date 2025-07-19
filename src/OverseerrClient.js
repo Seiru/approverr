@@ -5,16 +5,14 @@ export default class OverseerrClient {
   }
 
   async getRequests() {
-    const response = await fetch(`${this.url}/request\
-      ?filter=pending\
-      &take=100`, {
+    const response = await fetch(`${this.url}/request?filter=pending&take=100`, {
       method: 'GET',
       headers: {
         'X-Api-Key': this.apiKey,
       },
     });
 
-    return (response.json()).results;
+    return (await response.json()).results;
   }
 
   async updateRequest(requestId, rootFolder) {
@@ -29,7 +27,7 @@ export default class OverseerrClient {
       }),
     });
 
-    return response.json();
+    return await response.json();
   }
 
   async updateRequestStatus(requestId, status) {
@@ -40,7 +38,7 @@ export default class OverseerrClient {
       },
     });
 
-    return response.json();
+    return await response.json();
   }
 
   async getMovieDetails(movieId) {
@@ -51,7 +49,7 @@ export default class OverseerrClient {
       },
     });
 
-    return response.json();
+    return await response.json();
   }
 
   async getTVDetails(tvId) {
@@ -62,6 +60,6 @@ export default class OverseerrClient {
       },
     });
 
-    return response.json();
+    return await response.json();
   }
 }

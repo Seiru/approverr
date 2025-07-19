@@ -10,98 +10,93 @@ const main = async function(config) {
   while (true) {
     const requests = await overseerrClient.getRequests();
 
-    requests.forEach(async request => {
+    for (const request of requests) {
       let actionsToTake = false;
+      let mediaDetails = request.type === 'movie' ? await overseerrClient.getMovieDetails(request.media.tmdbId) : await overseerrClient.getTVDetails(request.media.tmdbId);
 
-      rules.forEach(async rule => {
-        let mediaDetails;
-
+      for (const rule of rules) {
         if (rule.type === 'movie' && request.type === 'movie') {
-          mediaDetails = await overseerrClient.getMovieDetails(request.movie.id);
-
           if (rule.keywords) {
-            rule.keywords.forEach(keyword => {
-              if (mediaDetails.keywords.some(requestKeyword => requestKeyword.name.downcase() === keyword.downcase())) {
+            for (const keyword of rule.keywords) {
+              if (mediaDetails.keywords?.some(requestKeyword => requestKeyword.name.downcase() === keyword.downcase())) {
                 console.log(`Tag ${keyword} found in movie ${mediaDetails.title}`);
                 actionsToTake = rule.actions;
               }
-            });
+            }
           }
 
           if (rule.strings) {
-            rule.strings.forEach(string => {
-              if (mediaDetails.overview.downcase().includes(string.downcase())) {
+            for (const string of rule.strings) {
+              if (mediaDetails.overview?.downcase().includes(string.downcase())) {
                 console.log(`String ${string} found in movie ${mediaDetails.title}`);
                 actionsToTake = rule.actions;
-              } else if (mediaDetails.title.downcase().includes(string.downcase())) {
+              } else if (mediaDetails.title?.downcase().includes(string.downcase())) {
                 console.log(`String ${string} found in movie ${mediaDetails.title}`);
                 actionsToTake = rule.actions;
               }
-            });
+            }
           }
 
           if (rule.regex) {
-            rule.regex.forEach(regex => {
-              regex = new RegExp(regex);
+            for (const regex of rule.regex) {
+              const regexObj = new RegExp(regex);
 
-              if (mediaDetails.overview.match(regex)) {
-                console.log(`Regex ${regex} found in movie ${mediaDetails.title}`);
+              if (mediaDetails.overview?.match(regexObj)) {
+                console.log(`Regex ${regexObj} found in movie ${mediaDetails.title}`);
                 actionsToTake = rule.actions;
               }
 
-              if (mediaDetails.title.match(regex)) {
-                console.log(`Regex ${regex} found in movie ${mediaDetails.title}`);
+              if (mediaDetails.title?.match(regexObj)) {
+                console.log(`Regex ${regexObj} found in movie ${mediaDetails.title}`);
                 actionsToTake = rule.actions;
               }
-            });
+            }
           }
         } else if (rule.type === 'tv' && request.type === 'tv') {
-          mediaDetails = await overseerrClient.getTVDetails(request.tv.id);
-
           if (rule.keywords) {
-            rule.keywords.forEach(keyword => {
-              if (mediaDetails.keywords.some(requestKeyword => requestKeyword.name.downcase() === keyword.downcase())) {
+            for (const keyword of rule.keywords) {
+              if (mediaDetails.keywords?.some(requestKeyword => requestKeyword.name.downcase() === keyword.downcase())) {
                 console.log(`Tag ${keyword} found in TV show ${mediaDetails.name}`);
                 actionsToTake = rule.actions;
               }
-            });
+            }
           }
 
           if (rule.strings) {
-            rule.strings.forEach(string => {
-              if (mediaDetails.overview.downcase().includes(string.downcase())) {
+            for (const string of rule.strings) {
+              if (mediaDetails.overview?.downcase().includes(string.downcase())) {
                 console.log(`String ${string} found in TV show ${mediaDetails.name}`);
                 actionsToTake = rule.actions;
-              } else if (mediaDetails.name.downcase().includes(string.downcase())) {
+              } else if (mediaDetails.name?.downcase().includes(string.downcase())) {
                 console.log(`String ${string} found in TV show ${mediaDetails.name}`);
                 actionsToTake = rule.actions;
               }
-            });
+            }
           }
 
           if (rule.regex) {
-            rule.regex.forEach(regex => {
-              if (mediaDetails.overview.match(regex)) {
+            for (const regex of rule.regex) {
+              if (mediaDetails.overview?.match(regex)) {
                 console.log(`Regex ${regex} found in TV show ${mediaDetails.name}`);
                 actionsToTake = rule.actions;
               }
 
-              if (mediaDetails.name.match(regex)) {
+              if (mediaDetails.name?.match(regex)) {
                 console.log(`Regex ${regex} found in TV show ${mediaDetails.name}`);
                 actionsToTake = rule.actions;
               }
-            });
+            }
           }
         }
-      });
+      }
 
       if (actionsToTake) {
         // We just support updating the root folder for now
-        actionsToTake.forEach(async action => {
+        for (const action of actionsToTake) {
           if (action.rootFolder) {
             await overseerrClient.updateRequest(request.id, action.rootFolder);
           }
-        });
+        }
       }
 
       if (config.autoApprove) {
@@ -115,9 +110,9 @@ const main = async function(config) {
         const mediaTitle = request.type === 'movie' ? mediaDetails.title : mediaDetails.name;
 
         if (actionsToTake) {
-          message = `Request ${request.id} by user ${request.requestedBy.plexUsername} for title ${mediaTitle} ${config.autoApprove ? 'approved and ' : ' '}moved to ${actionsToTake.rootFolder}`;
+          message = `Request ${request.id} by user ${request.requestedBy.displayName} for title ${mediaTitle} ${config.autoApprove ? 'approved and ' : ' '}moved to ${actionsToTake.rootFolder}`;
         } else {
-          message = `Request ${request.id} by user ${request.requestedBy.plexUsername} for title ${mediaTitle} ${config.autoApprove ? 'approved' : 'received'}`;
+          message = `Request ${request.id} by user ${request.requestedBy.displayName} for title ${mediaTitle} ${config.autoApprove ? 'approved' : 'received'}`;
         }
 
         await fetch(`https://ntfy.sh/${config.ntfy.topic}`, {
@@ -125,7 +120,7 @@ const main = async function(config) {
           body: message
         });
       }
-    });
+    }
 
     await sleep(30000);
   }
