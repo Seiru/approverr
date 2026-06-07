@@ -1,13 +1,19 @@
+import { writeFileSync } from "fs";
 import loadConfig from "./loadConfig.js";
 import OverseerrClient from "./OverseerrClient.js";
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// Liveness heartbeat for the container healthcheck: written at the top of every poll iteration so a
+// wedged loop goes stale. The compose healthcheck asserts this file's freshness (find -mmin -2).
+const HEARTBEAT_FILE = "/tmp/approverr.heartbeat";
 
 const main = async function(config) {
   const overseerrClient = new OverseerrClient(config.overseerr);
   const rules = config.rules;
 
   while (true) {
+    writeFileSync(HEARTBEAT_FILE, String(Date.now()));
     const requests = await overseerrClient.getRequests();
 
     for (const request of requests) {

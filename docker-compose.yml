@@ -3,4 +3,12 @@ services:
     build: .
     volumes:
       - ./config/config.yml:/usr/src/approverr/config/config.yml
+    # Pure poller, no socket: the loop touches /tmp/approverr.heartbeat each iteration; a stale file
+    # (>2min) means the loop is wedged. See src/index.js (HEARTBEAT_FILE).
+    healthcheck:
+      test: ["CMD-SHELL", "find /tmp/approverr.heartbeat -mmin -2 | grep -q . || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
     restart: unless-stopped
