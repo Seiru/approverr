@@ -19,6 +19,9 @@ rules:
       - '\\bNXT\\b'
     actions: # at least one action is required
       rootFolder: "/my_media_share/Wrestling TV"
+      # profileId: 1   # optional: pin a specific quality profile (overrides the Overseerr/Seerr server
+      #                #   default). Handy to keep matches on a permissive profile after the default
+      #                #   is switched to a strict TRaSH profile. Use the arr's quality-profile id.
   - name: "wrestling events"
     type: "movie" #required
     keywords:

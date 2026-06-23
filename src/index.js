@@ -104,6 +104,13 @@ const main = async function(config) {
             rootFolder: actionsToTake.rootFolder
           }
 
+          // Optionally pin the quality profile too, so a rule can keep its matches on a specific
+          // profile regardless of the Overseerr/Seerr server default (e.g. keep wrestling on the
+          // permissive "Any" profile even after the default is switched to a strict TRaSH profile).
+          if (actionsToTake.profileId) {
+            options.profileId = actionsToTake.profileId;
+          }
+
           if (request.type === "tv") {
             options.seasons = request.seasons.map(season => season.seasonNumber);
           }
