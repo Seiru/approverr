@@ -1,5 +1,6 @@
 import { writeFileSync } from "fs";
 import loadConfig from "./loadConfig.js";
+import NotifyClient from "./notify.js";
 import OverseerrClient from "./OverseerrClient.js";
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -8,13 +9,57 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 // wedged loop goes stale. The compose healthcheck asserts this file's freshness (find -mmin -2).
 const HEARTBEAT_FILE = "/tmp/approverr.heartbeat";
 
-const main = async function(config) {
+// The poll loop failing is one condition, not a stream of messages: the gateway keys it and edits a single
+// card until a successful poll resolves it. The throttle keeps a tight retry loop from republishing the
+// same firing state every five seconds.
+const ERROR_CONDITION_KEY = "approverr:error";
+const ERROR_THROTTLE_MS = 300000;
+
+const errorCondition = { firing: false, lastPublishedAt: 0 };
+
+function publishLoopError(notify, error) {
+  if (Date.now() - errorCondition.lastPublishedAt <= ERROR_THROTTLE_MS) return;
+
+  notify.publish({
+    area: "media",
+    severity: "warn",
+    title: "approverr poll loop failing",
+    // The body can reach a chat, so it stays a fixed phrase. The error text goes to `detail`, which the
+    // gateway stores for its LAN-only history page and never sends on.
+    body: "Approverr's poll loop has errored within the past five minutes. Check the container logs.",
+    detail: String(error?.stack ?? error),
+    key: ERROR_CONDITION_KEY,
+    state: "firing",
+  });
+
+  errorCondition.firing = true;
+  errorCondition.lastPublishedAt = Date.now();
+}
+
+function publishLoopRecovered(notify) {
+  if (!errorCondition.firing) return;
+
+  errorCondition.firing = false;
+  errorCondition.lastPublishedAt = 0;
+
+  notify.publish({
+    area: "media",
+    severity: "info",
+    title: "approverr poll loop recovered",
+    body: "Approverr is polling Seerr again.",
+    key: ERROR_CONDITION_KEY,
+    state: "resolved",
+  });
+}
+
+const main = async function(config, notify) {
   const overseerrClient = new OverseerrClient(config.overseerr);
   const rules = config.rules;
 
   while (true) {
     writeFileSync(HEARTBEAT_FILE, String(Date.now()));
     const requests = await overseerrClient.getRequests();
+    publishLoopRecovered(notify);
 
     for (const request of requests) {
       let actionsToTake = false;
@@ -123,23 +168,22 @@ const main = async function(config) {
         await overseerrClient.updateRequestStatus(request.id, 'approve');
       }
 
-      if (config.ntfy && config.ntfy.enabled) {
-        // Do not send the actual error because ntfy is not a secure service, and the error could contain sensitive information
+      // Routine chatter: one silent card per request. Fire-and-forget on purpose, so a slow or dead
+      // gateway can never delay or fail an approval.
+      const mediaTitle = request.type === 'movie' ? mediaDetails.title : mediaDetails.name;
+      const verb = config.autoApprove ? 'approved' : 'received';
 
-        let message;
-        const mediaTitle = request.type === 'movie' ? mediaDetails.title : mediaDetails.name;
-
-        if (actionsToTake) {
-          message = `Request ${request.id} by user ${request.requestedBy.displayName} for title ${mediaTitle} ${config.autoApprove ? 'approved and ' : ' '}moved to ${actionsToTake.rootFolder}`;
-        } else {
-          message = `Request ${request.id} by user ${request.requestedBy.displayName} for title ${mediaTitle} ${config.autoApprove ? 'approved' : 'received'}`;
-        }
-
-        await fetch(`https://ntfy.sh/${config.ntfy.topic}`, {
-          method: 'POST',
-          body: message
-        });
-      }
+      notify.publish({
+        area: 'media',
+        severity: 'info',
+        title: `Seerr request ${verb}: ${mediaTitle}`,
+        body: actionsToTake
+          ? `Request ${request.id} by ${request.requestedBy.displayName}, moved to ${actionsToTake.rootFolder}`
+          : `Request ${request.id} by ${request.requestedBy.displayName}`,
+        // A request leaves the pending filter once it is approved, so one key per request id is a safe
+        // dedupe across a restart or a retried send.
+        idempotencyKey: `approverr:request:${request.id}`,
+      });
     }
 
     await sleep(30000);
@@ -149,7 +193,6 @@ const main = async function(config) {
 
 (async () => {
   let parsedConfig;
-  let timeLastNtfyErrorMessageSent = 0;
 
   try {
     parsedConfig = loadConfig();
@@ -159,29 +202,22 @@ const main = async function(config) {
     process.exit(1);
   }
 
+  // The gateway URL and token come from the environment, never from config/config.yml: that file is
+  // mounted from the deploy directory and lives next to a tracked example in a public repo.
+  const notify = new NotifyClient();
+
+  if (!notify.enabled) {
+    console.warn('NOTIFY_URL or NOTIFY_TOKEN is not set: approverr is running without notifications.');
+  }
+
   while (true) {
     try {
-      await main(parsedConfig);
+      await main(parsedConfig, notify);
     } catch (e) {
       console.error('Error running main loop:');
       console.error(e);
 
-      if (parsedConfig.ntfy && parsedConfig.ntfy.enabled) {
-        if (Date.now() - timeLastNtfyErrorMessageSent > 300000) {
-
-          try {
-            await fetch(`https://ntfy.sh/${parsedConfig.ntfy.topic}`, {
-              method: 'POST',
-              body: 'Error in Approverr within the past five minutes. Please check logs for more information.'
-            });
-          } catch (error) {
-            console.error('Error sending ntfy message to alert about an error:');
-            console.error(error);
-          }
-
-          timeLastNtfyErrorMessageSent = Date.now();
-        }
-      }
+      publishLoopError(notify, e);
 
       await sleep(5000);
     }

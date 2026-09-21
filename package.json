@@ -5,7 +5,7 @@
   "description": "Script providing extra customization when approving Overseerr requests",
   "main": "src/index.js",
   "scripts": {
-    "test": "node test.js"
+    "test": "node --test"
   },
   "author": "seiru",
   "license": "ISC",

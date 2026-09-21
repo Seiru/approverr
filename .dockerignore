@@ -1,0 +1,7 @@
+node_modules
+.git
+.env
+# Only the example belongs in an image layer. The real config is bind-mounted at runtime, and a deploy
+# directory tends to collect config.yml.bak-* files that hold the same API key.
+config/*
+!config/config.example.yml

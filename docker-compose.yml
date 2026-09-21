@@ -1,6 +1,11 @@
 services:
   approverr:
     build: .
+    # NOTIFY_URL and NOTIFY_TOKEN only (see .env.example). The file is optional on purpose: without it
+    # approverr logs one warning at boot and runs without notifications rather than refusing to start.
+    env_file:
+      - path: .env
+        required: false
     volumes:
       - ./config/config.yml:/usr/src/approverr/config/config.yml
     # Pure poller, no socket: the loop touches /tmp/approverr.heartbeat each iteration; a stale file
